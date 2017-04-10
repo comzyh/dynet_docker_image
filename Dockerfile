@@ -1,6 +1,4 @@
-
-FROM nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04
-
+FROM nvidia/cuda:8.0-devel-ubuntu16.04
 LABEL maintainer "comzyh <comzyh@gmail.com>"
 
 RUN apt-get update && apt-get install -y apt-transport-https
@@ -12,4 +10,19 @@ RUN echo "deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ xenial main restricte
 
 RUN apt-get update
 RUN locale-gen en_US.UTF-8
-RUN apt-get install -y wget python3.5 python3-pip
+RUN apt-get install -y git mercurial python python-pip cmake 
+RUN apt-get install -y libboost-program-options-dev libboost-regex-dev libboost-serialization-dev libboost-dev libboost-system-dev libboost-filesystem-dev libboost-test-dev
+RUN pip install cython
+
+# install eigen & dynet
+WORKDIR /opt
+RUN hg clone https://bitbucket.org/eigen/eigen -r 346ecdb
+ADD dynet /opt/dynet
+RUN mkdir /opt/dynet/build
+WORKDIR /opt/dynet/build
+RUN cmake .. -DEIGEN3_INCLUDE_DIR=/opt/eigen -DPYTHON=`which python` -DBACKEND=cuda
+RUN make -j 4
+WORKDIR /opt/dynet/build/python
+RUN python setup.py install
+ENV DYLD_LIBRARY_PATH /opt/dynet/build/dynet/:$DYLD_LIBRARY_PATH
+
